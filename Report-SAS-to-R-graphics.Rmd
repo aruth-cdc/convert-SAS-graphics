@@ -1,0 +1,64 @@
+---
+title: "Recreated SAS grphs"
+author: "Ali Ruth"
+date: "2025-09-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggplot2)
+library(survey)
+library(kableExtra)
+
+load("data/df.Rda")
+
+source("R/custom_theme.R")
+
+```
+
+
+## Tables
+
+You can also embed plots, for example:
+
+```{r mortstat, echo=FALSE}
+
+
+# try with labels and flipped axes ----
+
+# Filter the data for XAGEGROUP == 1 and exclude MORTSTAT == 0
+filtered_data <- data %>%
+  filter(XAGEGROUP == 1, MORTSTAT != 0, XEDUC %in% 1:4) %>%
+  mutate(UCOD_group = case_when(
+    UCOD_LEADING == "001" ~ "Diseases of heart",
+    UCOD_LEADING == "002" ~ "Malignant neoplasms",
+    UCOD_LEADING == "004" ~ "Accidents",
+    UCOD_LEADING == "005" ~ "Cerebrovascular disease",
+    UCOD_LEADING == "007" ~ "Diabetes mellitus",
+    UCOD_LEADING == "010" ~ "All other causes (residual)",
+    TRUE ~ "All others"
+  ))
+
+# Calculate percent frequencies for UCOD groups by XEDUC
+percent_data <- filtered_data %>%
+  group_by(XEDUC, UCOD_group) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  group_by(XEDUC) %>%  # Group by XEDUC for percentage calculation
+  mutate(percent = (count / sum(count)) * 100)  # Calculate percent
+
+# Create the ggplot with facets for each XEDUC group and rotated axes
+ggplot(percent_data, aes(x = UCOD_group, y = percent, fill = UCOD_group)) + 
+  geom_bar(stat = "identity") + 
+  facet_wrap(~ XEDUC, ncol = 2) +  # Arrange in a square formation
+  labs(title = "Percent Frequencies of UCOD_LEADING Groups by XEDUC Groups (XAGEGROUP == 1, MORTSTAT != 0)",
+       x = "UCOD Groups",
+       y = "Percent Frequency") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  # Format y-axis as percentage
+  coord_flip() +  # Rotate axes
+  custom_theme()  # Apply the custom theme
+```
+
+
